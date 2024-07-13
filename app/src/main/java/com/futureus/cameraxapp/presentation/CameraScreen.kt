@@ -3,6 +3,7 @@ package com.futureus.cameraxapp.presentation
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
@@ -29,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -61,6 +63,13 @@ fun CameraScreen(
     val cameraViewModel = hiltViewModel<CameraViewModel>()
     val isRecording by cameraViewModel.isRecording.collectAsState()
     val timer by cameraViewModel.timer.collectAsState()
+    val uri by cameraViewModel.uri.collectAsState()
+
+   LaunchedEffect(key1 = uri) {
+        if (uri != null ) {
+           Log.d("CameraScreen", "Uri: $uri")
+        }
+   }
 
     Box(
         modifier = Modifier
@@ -154,8 +163,16 @@ fun CameraScreen(
                     .clickable {
                         controller.cameraSelector =
                             if (controller.cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA){
+                                // stop recording
+                                if (isRecording) {
+                                    cameraViewModel.onRecordVideo(controller)
+                                }
                                 CameraSelector.DEFAULT_FRONT_CAMERA
                             } else {
+                                // stop recording
+                                if (isRecording) {
+                                    cameraViewModel.onRecordVideo(controller)
+                                }
                                 CameraSelector.DEFAULT_BACK_CAMERA
                             }
                     },

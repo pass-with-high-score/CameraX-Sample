@@ -1,8 +1,12 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.daggerHilt)
+    alias(libs.plugins.kotlin.serialization)
     id("kotlin-kapt")
+    alias(libs.plugins.compose.compiler)
 }
 
 android {
@@ -20,6 +24,15 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        val supabaseAnoKey: String = gradleLocalProperties(rootDir, providers).getProperty("SUPABASE_ANON_KEY") ?: ""
+        val supabaseUrl: String = gradleLocalProperties(rootDir, providers).getProperty("SUPABASE_URL") ?: ""
+        val supabaseRole: String = gradleLocalProperties(rootDir, providers).getProperty("SUPABASE_ROLE") ?: ""
+        val secret: String = gradleLocalProperties(rootDir, providers).getProperty("SECRET") ?: ""
+        buildConfigField("String", "API_KEY", "\"$supabaseAnoKey\"")
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ROLE", "\"$supabaseRole\"")
+        buildConfigField("String", "SECRET", "\"$secret\"")
     }
 
     buildTypes {
@@ -40,9 +53,7 @@ android {
     }
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.1"
+        buildConfig = true
     }
     packaging {
         resources {
@@ -83,4 +94,17 @@ dependencies {
     kapt(libs.dagger.hilt.compiler)
     kapt(libs.dagger.hilt.androidx)
     implementation(libs.dagger.hilt.navigation.compose)
+
+    // Serialization
+    implementation(libs.bundles.serialization)
+
+
+    // Superbase
+    implementation(libs.bundles.supabase)
+
+    // Ktor
+    implementation(libs.bundles.ktor)
+
+    // Coil
+    implementation(libs.coil.kt.coil.compose)
 }
