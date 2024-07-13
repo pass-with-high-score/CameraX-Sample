@@ -33,8 +33,14 @@ class CameraViewModel @Inject constructor(
     private val _imageDto = MutableStateFlow<ImageDto?>(null)
     val imageDto = _imageDto.asStateFlow()
 
+    private val _imageLink = MutableStateFlow<String?>(null)
+    val imageLink = _imageLink.asStateFlow()
+
     private val _videoDto = MutableStateFlow<VideoDto?>(null)
     val videoDto = _videoDto.asStateFlow()
+
+    private val _videoLink = MutableStateFlow<String?>(null)
+    val videoLink = _videoLink.asStateFlow()
 
 
     private val _isTakingPhoto = MutableStateFlow(false)
@@ -56,7 +62,10 @@ class CameraViewModel @Inject constructor(
             // upload image to supabase
             _imageDto.value?.let {
                 viewModelScope.launch {
-                    imageRepository.uploadImage(imageDto = _imageDto.value!!)
+                    _imageLink.update {
+                        imageRepository.uploadImage(imageDto = _imageDto.value!!)
+                    }
+                    Log.d("CameraViewModel", "Image Link: ${imageLink.value}")
                 }
             }
 
@@ -76,7 +85,10 @@ class CameraViewModel @Inject constructor(
             // upload video to supabase
             _videoDto.value?.let {
                 viewModelScope.launch {
-                    videoRepository.uploadVideo(videoDto = _videoDto.value!!)
+                    _videoLink.update {
+                        videoRepository.uploadVideo(videoDto = _videoDto.value!!)
+                    }
+                    Log.d("CameraViewModel", "Video Link: ${videoLink.value}")
                 }
             }
 

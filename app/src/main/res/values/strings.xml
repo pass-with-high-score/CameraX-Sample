@@ -3,4 +3,5 @@
     <string name="open_gallery">Open Gallery</string>
     <string name="record_video">Record Video</string>
     <string name="switch_camera">Switch Camera Preview</string>
+    <string name="take_photo">Take photo</string>
 </resources>

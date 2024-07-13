@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
@@ -38,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -63,13 +65,9 @@ fun CameraScreen(
     val cameraViewModel = hiltViewModel<CameraViewModel>()
     val isRecording by cameraViewModel.isRecording.collectAsState()
     val timer by cameraViewModel.timer.collectAsState()
-    val uri by cameraViewModel.uri.collectAsState()
 
-   LaunchedEffect(key1 = uri) {
-        if (uri != null ) {
-           Log.d("CameraScreen", "Uri: $uri")
-        }
-   }
+    val context = LocalContext.current
+
 
     Box(
         modifier = Modifier
@@ -147,6 +145,34 @@ fun CameraScreen(
                         if (isRecording) Icons.Default.Stop
                         else Icons.Default.Videocam,
                         contentDescription = stringResource(R.string.record_video),
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            )
+
+            Spacer(modifier = Modifier.width(1.dp))
+
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size(60.dp)
+                    .background(MaterialTheme.colorScheme.primary)
+                    .clickable {
+                        if((activity as MainActivity).arePermissionsGranted()) {
+                            if (isRecording) {
+                                cameraViewModel.onRecordVideo(controller)
+                                Toast.makeText(context, "Recording stopped", Toast.LENGTH_SHORT).show()
+                            }else {
+                                cameraViewModel.onTakePhoto(controller)
+                            }
+                        }
+                    },
+                contentAlignment = Alignment.Center,
+                content = {
+                    Icon(
+                        imageVector = Icons.Default.PhotoLibrary,
+                        contentDescription = stringResource(R.string.take_photo),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(26.dp)
                     )
