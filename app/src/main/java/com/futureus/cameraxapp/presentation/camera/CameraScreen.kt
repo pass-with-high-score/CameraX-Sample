@@ -1,9 +1,7 @@
-package com.futureus.cameraxapp.presentation
+package com.futureus.cameraxapp.presentation.camera
 
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.util.Log
 import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.view.CameraController
@@ -23,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Cameraswitch
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Stop
@@ -40,21 +39,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.futureus.cameraxapp.MainActivity
 import com.futureus.cameraxapp.R
+import com.ramcosta.composedestinations.annotation.Destination
+import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.PreviewScreenDestination
+import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 
 @Composable
+@Destination<RootGraph>
 fun CameraScreen(
-    activity: Activity
+    navigator: DestinationsNavigator,
 ) {
+    val context  = LocalContext.current
     val controller = remember {
         LifecycleCameraController(
-            activity.applicationContext
+            context.applicationContext
         ).apply {
             setEnabledUseCases(
                 CameraController.IMAGE_CAPTURE or CameraController.VIDEO_CAPTURE
@@ -64,17 +68,26 @@ fun CameraScreen(
 
     val cameraViewModel = hiltViewModel<CameraViewModel>()
     val isRecording by cameraViewModel.isRecording.collectAsState()
-    val timer by cameraViewModel.timer.collectAsState()
+    val videoDto by cameraViewModel.videoLink.collectAsState()
 
-    val context = LocalContext.current
-
+    LaunchedEffect(videoDto) {
+        if (videoDto != null) {
+            navigator.navigate(
+                PreviewScreenDestination(
+                    videoDto = videoDto!!.uri!!
+                )
+            )
+            println(videoDto!!.uri)
+            println(videoDto!!.video)
+        }
+    }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
     ){
-        val lifecycleOwner = LocalLifecycleOwner.current
+        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = {
@@ -85,13 +98,72 @@ fun CameraScreen(
             }
         )
 
-        Text(
-            text = timer.toString(),
-            color = Color.White,
+        Row(
             modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = 20.dp)
-        )
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 40.dp)
+                .align(Alignment.TopCenter),
+        ) {
+
+            Box (
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size(40.dp)
+                    .background(Color.White.copy(
+                        alpha = 0.2f
+                    )),
+                contentAlignment = Alignment.Center
+            ){
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = stringResource(R.string.open_gallery),
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(26.dp)
+                        .clickable {
+                            navigator.navigateUp()
+                        }
+                )
+            }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size(40.dp)
+                    .background(Color.White.copy(
+                        alpha = 0.2f
+                    ))
+                    .clickable {
+                        controller.cameraSelector =
+                            if (controller.cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA){
+                                // stop recording
+                                if (isRecording) {
+                                    cameraViewModel.onRecordVideo(controller)
+                                }
+                                CameraSelector.DEFAULT_FRONT_CAMERA
+                            } else {
+                                // stop recording
+                                if (isRecording) {
+                                    cameraViewModel.onRecordVideo(controller)
+                                }
+                                CameraSelector.DEFAULT_BACK_CAMERA
+                            }
+                    },
+                contentAlignment = Alignment.Center,
+                content = {
+                    Icon(
+                        imageVector = Icons.Default.Cameraswitch,
+                        contentDescription = stringResource(R.string.switch_camera),
+                        tint = MaterialTheme.colorScheme.onPrimary.copy(
+                            alpha = 0.8f
+                        ),
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+            )
+
+        }
 
         Row (
             modifier = Modifier
@@ -107,13 +179,16 @@ fun CameraScreen(
                     .size(45.dp)
                     .background(MaterialTheme.colorScheme.primary)
                     .clickable {
+                        if (isRecording) {
+                            cameraViewModel.onRecordVideo(controller)
+                        }
                         Intent(
                             Intent.ACTION_VIEW,
                             Uri.parse(
                                 "content://media/internal/images/media"
                             )
                         ).also {
-                            activity.startActivity(it)
+                            context.startActivity(it)
                         }
                     },
                 contentAlignment = Alignment.Center,
@@ -134,7 +209,7 @@ fun CameraScreen(
                     .size(60.dp)
                     .background(MaterialTheme.colorScheme.primary)
                     .clickable {
-                        if((activity as MainActivity).arePermissionsGranted()) {
+                        if((context as MainActivity).arePermissionsGranted()) {
                             cameraViewModel.onRecordVideo(controller)
                         }
                     },
@@ -157,9 +232,8 @@ fun CameraScreen(
                 modifier = Modifier
                     .clip(CircleShape)
                     .size(60.dp)
-                    .background(MaterialTheme.colorScheme.primary)
                     .clickable {
-                        if((activity as MainActivity).arePermissionsGranted()) {
+                        if((context as MainActivity).arePermissionsGranted()) {
                             if (isRecording) {
                                 cameraViewModel.onRecordVideo(controller)
                                 Toast.makeText(context, "Recording stopped", Toast.LENGTH_SHORT).show()
@@ -170,46 +244,13 @@ fun CameraScreen(
                     },
                 contentAlignment = Alignment.Center,
                 content = {
-                    Icon(
-                        imageVector = Icons.Default.PhotoLibrary,
-                        contentDescription = stringResource(R.string.take_photo),
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-            )
+//                    Icon(
+//                        imageVector = Icons.Default.PhotoLibrary,
+//                        contentDescription = stringResource(R.string.take_photo),
+//                        tint = MaterialTheme.colorScheme.onPrimary,
+//                        modifier = Modifier.size(26.dp)
+//                    )
 
-            Spacer(modifier = Modifier.width(1.dp))
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(14.dp))
-                    .size(45.dp)
-                    .background(MaterialTheme.colorScheme.primary)
-                    .clickable {
-                        controller.cameraSelector =
-                            if (controller.cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA){
-                                // stop recording
-                                if (isRecording) {
-                                    cameraViewModel.onRecordVideo(controller)
-                                }
-                                CameraSelector.DEFAULT_FRONT_CAMERA
-                            } else {
-                                // stop recording
-                                if (isRecording) {
-                                    cameraViewModel.onRecordVideo(controller)
-                                }
-                                CameraSelector.DEFAULT_BACK_CAMERA
-                            }
-                    },
-                contentAlignment = Alignment.Center,
-                content = {
-                    Icon(
-                        imageVector = Icons.Default.Cameraswitch,
-                        contentDescription = stringResource(R.string.switch_camera),
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(26.dp)
-                    )
                 }
             )
 

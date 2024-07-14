@@ -73,14 +73,14 @@ class CameraRepositoryImpl @Inject constructor(
                                 }
                             } catch (e: Exception) {
                                 withContext(Dispatchers.Main) {
-                                    continuation.resumeWithException(e)
+                                    Log.e("CameraRepositoryImpl", "Error saving photo: ${e.message}")
                                 }
                             }
                         }
                     }
 
                     override fun onError(exception: ImageCaptureException) {
-                        continuation.resumeWithException(exception)
+                       Log.e("CameraRepositoryImpl", "Error taking photo: ${exception.message}")
                     }
                 }
             )
@@ -155,55 +155,64 @@ class CameraRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun recordVideo(controller: LifecycleCameraController): VideoDto = suspendCancellableCoroutine { continuation ->
-        if (ContextCompat.checkSelfPermission(application, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            // Check if there's an ongoing recording
-            if (recording != null) {
-                // Stop the current recording or handle it according to your app's logic
-                recording?.stop()
-                recording = null
-                // Optionally, return or handle the current recording's details
-                // continuation.resume(...) or continuation.resumeWithException(...)
-                // For simplicity, we'll just log and return to avoid starting a new recording
-                Log.d("CameraRepositoryImpl", "A recording is already in progress. Stopping the current recording.")
-                return@suspendCancellableCoroutine
-            }
+    override suspend fun recordVideo(controller: LifecycleCameraController): VideoDto =
+        suspendCancellableCoroutine { continuation ->
+            if (ContextCompat.checkSelfPermission(
+                    application,
+                    Manifest.permission.RECORD_AUDIO
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                // Check if there's an ongoing recording
+                if (recording != null) {
+                    recording?.stop()
+                    recording = null
+                    Log.d(
+                        "CameraRepositoryImpl",
+                        "A recording is already in progress. Stopping the current recording."
+                    )
+                    return@suspendCancellableCoroutine
+                }
 
-            val timeInMillis = System.currentTimeMillis()
-            val file = File(application.filesDir, "${timeInMillis}_video.mp4")
+                val timeInMillis = System.currentTimeMillis()
+                val file = File(application.filesDir, "${timeInMillis}_video.mp4")
 
-            recording = controller.startRecording(
-                FileOutputOptions.Builder(file).build(),
-                AudioConfig.create(true),
-                ContextCompat.getMainExecutor(application)
-            ) { event ->
-                when (event) {
-                    is VideoRecordEvent.Finalize -> {
-                        if (!event.hasError()) {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                try {
-                                    val videoDto = VideoDto(
-                                        video = file.readBytes(),
-                                        fileName = file.name
-                                    )
-                                    continuation.resume(videoDto)
-                                } catch (e: Exception) {
-                                    continuation.resumeWithException(e)
-                                } finally {
-                                    recording = null // Ensure recording is cleared after completion
+                recording = controller.startRecording(
+                    FileOutputOptions.Builder(file).build(),
+                    AudioConfig.create(true),
+                    ContextCompat.getMainExecutor(application)
+                ) { event ->
+                    when (event) {
+                        is VideoRecordEvent.Finalize -> {
+                            if (!event.hasError()) {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    try {
+                                        saveVideo(file)
+                                        val videoDto = VideoDto(
+                                            video = file.readBytes(),
+                                            fileName = file.name
+                                        )
+                                        continuation.resume(videoDto)
+                                    } catch (e: Exception) {
+                                        continuation.resumeWithException(e)
+                                    } finally {
+                                        recording = null
+                                    }
                                 }
+                            } else {
+                                val error = event.error
+                                Log.e("CameraRepositoryImpl", "Recording failed with error: $error")
                             }
-                        } else {
-                            continuation.resumeWithException(RuntimeException("Recording failed"))
+                        }
+
+                        else -> {
+                            Log.d("CameraRepositoryImpl", "Recording event: $event")
                         }
                     }
-                    else -> Unit // Handle other events if necessary
                 }
+            } else {
+                Log.e("CameraRepositoryImpl", "Permission to record audio is not granted")
             }
-        } else {
-            continuation.resumeWithException(SecurityException("Missing RECORD_AUDIO permission"))
         }
-    }
 
     private suspend fun saveVideo(file: File): Uri {
         return withContext(Dispatchers.IO) {

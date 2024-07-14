@@ -8,9 +8,17 @@ import com.futureus.cameraxapp.ui.theme.CameraXAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 import android.Manifest
 import android.content.pm.PackageManager
+import androidx.compose.runtime.getValue
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.futureus.cameraxapp.presentation.CameraScreen
+import androidx.navigation.NavGraph
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.futureus.cameraxapp.presentation.camera.CameraScreen
+import com.ramcosta.composedestinations.DestinationsNavHost
+import com.ramcosta.composedestinations.generated.NavGraphs
+import com.ramcosta.composedestinations.navigation.dependency
+import com.ramcosta.composedestinations.rememberNavHostEngine
 import io.github.jan.supabase.SupabaseClient
 import javax.inject.Inject
 
@@ -25,10 +33,23 @@ class MainActivity : ComponentActivity() {
         if (!arePermissionsGranted()) {
             ActivityCompat.requestPermissions(this, CAMERA_PERMISSION, 0)
         }
+
         enableEdgeToEdge()
         setContent {
             CameraXAppTheme {
-                CameraScreen(activity = this)
+                val navController = rememberNavController()
+                val navHostEngine = rememberNavHostEngine()
+
+                val newBackStackEntry by navController.currentBackStackEntryAsState()
+                val route = newBackStackEntry?.destination?.route
+                DestinationsNavHost(
+                    navController = navController,
+                    engine = navHostEngine,
+                    navGraph = NavGraphs.root,
+                    dependenciesContainerBuilder = {
+                        dependency(this@MainActivity)
+                    }
+                )
             }
         }
     }

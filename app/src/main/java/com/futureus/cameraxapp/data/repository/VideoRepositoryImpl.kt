@@ -1,9 +1,7 @@
 package com.futureus.cameraxapp.data.repository
 
-import com.futureus.cameraxapp.BuildConfig
 import com.futureus.cameraxapp.data.dto.VideoDto
 import com.futureus.cameraxapp.domain.repository.VideoRepository
-import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.storage.UploadStatus
 import io.github.jan.supabase.storage.uploadAsFlow
@@ -11,10 +9,9 @@ import javax.inject.Inject
 import kotlin.time.Duration.Companion.minutes
 
 class VideoRepositoryImpl @Inject constructor(
-    private val postgrest: Postgrest,
     private val storage: Storage
 ) : VideoRepository {
-    override suspend fun uploadVideo(videoDto: VideoDto): String {
+    override suspend fun uploadVideo(videoDto: VideoDto): VideoDto {
         if (videoDto.video.isNotEmpty()) {
             val videoUrl = storage.from("image")
 
@@ -33,13 +30,11 @@ class VideoRepositoryImpl @Inject constructor(
 
             println("Video URL: $url")
 
-            return buildVideoUrl(videoDto.fileName)
+            val videoDtoWithUrl = videoDto.copy(uri = url)
+            return videoDtoWithUrl
         } else {
             throw IllegalArgumentException("Video is empty")
         }
     }
-
-    private fun buildVideoUrl(videoFileName: String) =
-        "${BuildConfig.SUPABASE_URL}/storage/v1/object/public/${videoFileName}".replace(" ", "%20")
 
 }

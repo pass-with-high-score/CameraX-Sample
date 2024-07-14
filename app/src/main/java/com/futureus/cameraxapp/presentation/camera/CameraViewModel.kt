@@ -1,4 +1,4 @@
-package com.futureus.cameraxapp.presentation
+package com.futureus.cameraxapp.presentation.camera
 
 import android.net.Uri
 import android.util.Log
@@ -11,6 +11,7 @@ import com.futureus.cameraxapp.domain.repository.CameraRepository
 import com.futureus.cameraxapp.domain.repository.ImageRepository
 import com.futureus.cameraxapp.domain.repository.VideoRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -39,7 +40,7 @@ class CameraViewModel @Inject constructor(
     private val _videoDto = MutableStateFlow<VideoDto?>(null)
     val videoDto = _videoDto.asStateFlow()
 
-    private val _videoLink = MutableStateFlow<String?>(null)
+    private val _videoLink = MutableStateFlow<VideoDto?>(null)
     val videoLink = _videoLink.asStateFlow()
 
 
@@ -76,12 +77,13 @@ class CameraViewModel @Inject constructor(
         controller: LifecycleCameraController
     ) {
         _isRecording.update { !isRecording.value }
+
+        // start recording video
+
         viewModelScope.launch {
             _videoDto.update {
                 cameraRepository.recordVideo(controller)
             }
-            Log.d("CameraViewModel", "Uri: ${uri.value}")
-
             // upload video to supabase
             _videoDto.value?.let {
                 viewModelScope.launch {
@@ -94,6 +96,7 @@ class CameraViewModel @Inject constructor(
 
         }
     }
+
 
 
 }

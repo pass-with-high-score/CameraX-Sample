@@ -5,7 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.daggerHilt)
     alias(libs.plugins.kotlin.serialization)
-    id("kotlin-kapt")
+    alias(libs.plugins.ksp)
     alias(libs.plugins.compose.compiler)
 }
 
@@ -91,8 +91,8 @@ dependencies {
     implementation(libs.androidx.camera.extensions)
 
     implementation(libs.dagger.hilt)
-    kapt(libs.dagger.hilt.compiler)
-    kapt(libs.dagger.hilt.androidx)
+    ksp(libs.dagger.hilt.compiler)
+    ksp(libs.dagger.hilt.androidx)
     implementation(libs.dagger.hilt.navigation.compose)
 
     // Serialization
@@ -107,4 +107,25 @@ dependencies {
 
     // Coil
     implementation(libs.coil.kt.coil.compose)
+
+    // Compose dependencies
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.accompanist.flowlayout)
+
+    // RamCosta Navigation
+    implementation(libs.compose.destination.core)
+    ksp(libs.compose.destination.ksp)
+
+    // Navigation animation
+    implementation(libs.accompanist.navigation.animation)
+
+    // Coil Video
+    implementation(libs.coil.video)
+
+    // Exo Player
+    implementation("androidx.media3:media3-exoplayer:1.3.1")
+    implementation("androidx.media3:media3-exoplayer-dash:1.3.1")
+    implementation("androidx.media3:media3-ui:1.3.1")
+    implementation("androidx.media3:media3-exoplayer-hls:1.3.1")
 }

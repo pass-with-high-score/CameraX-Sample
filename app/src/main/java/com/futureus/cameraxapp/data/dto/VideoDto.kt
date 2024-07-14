@@ -2,7 +2,8 @@ package com.futureus.cameraxapp.data.dto
 
 data class VideoDto(
     val video: ByteArray,
-    val fileName: String
+    val fileName: String,
+    val uri: String? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
