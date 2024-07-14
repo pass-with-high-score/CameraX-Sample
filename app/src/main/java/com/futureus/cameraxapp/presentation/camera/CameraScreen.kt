@@ -47,13 +47,16 @@ import com.futureus.cameraxapp.MainActivity
 import com.futureus.cameraxapp.R
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootGraph
+import com.ramcosta.composedestinations.generated.destinations.HomeScreenDestination
 import com.ramcosta.composedestinations.generated.destinations.PreviewScreenDestination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
+import com.ramcosta.composedestinations.result.ResultBackNavigator
 
 @Composable
 @Destination<RootGraph>
 fun CameraScreen(
     navigator: DestinationsNavigator,
+    resultNavigator: ResultBackNavigator<String>
 ) {
     val context  = LocalContext.current
     val controller = remember {
@@ -72,11 +75,13 @@ fun CameraScreen(
 
     LaunchedEffect(videoDto) {
         if (videoDto != null) {
-            navigator.navigate(
-                PreviewScreenDestination(
-                    videoDto = videoDto!!.uri!!
-                )
-            )
+//            navigator.navigate(
+//                PreviewScreenDestination(
+//                    videoDto = videoDto!!.uri!!
+//                )
+
+//            )
+            resultNavigator.navigateBack(videoDto!!.uri!!)
             println(videoDto!!.uri)
             println(videoDto!!.video)
         }
